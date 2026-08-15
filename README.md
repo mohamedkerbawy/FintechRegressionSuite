@@ -1,6 +1,7 @@
 # Fintech Regression Suite — Risk-Based Test Automation Framework
 
-Sample framework Demonstrates risk-based regression analysis, C#/Playwright automation, and Azure DevOps
+Sample framework accompanying the case study *"[Reducing Release Risk for a Fintech Platform](docs/case-study-fintech-release-risk.md)"*.
+Demonstrates risk-based regression analysis, C#/Playwright automation, and Azure DevOps
 CI/CD integration for a fintech platform's critical business flows.
 
 ## Structure
