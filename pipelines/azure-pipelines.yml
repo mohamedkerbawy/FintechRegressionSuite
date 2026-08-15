@@ -1,0 +1,95 @@
+# Azure DevOps pipeline: risk-tiered regression execution
+#
+# - PR builds        -> Critical-only tests (fast feedback, minutes)
+# - Merge to main     -> Critical + High tests
+# - Nightly / pre-release -> Full suite (Critical + High + Medium + Low)
+#
+# The category filter passed to `dotnet test` mirrors the tiers defined in
+# RiskModel/risk-matrix.json and Framework/RiskCategory.cs.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+schedules:
+  - cron: "0 2 * * *" # nightly full regression, 2am
+    displayName: Nightly full regression
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  TEST_BASE_URL: "https://staging.fintech-platform.example.com"
+
+stages:
+  - stage: RiskBasedRegression
+    jobs:
+      - job: RunTests
+        displayName: "Run risk-tiered Playwright regression"
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: "8.0.x"
+
+          - script: dotnet restore
+            displayName: "Restore dependencies"
+
+          - script: dotnet build --configuration Release --no-restore
+            displayName: "Build"
+
+          - script: pwsh bin/Release/net8.0/playwright.ps1 install --with-deps chromium
+            displayName: "Install Playwright browsers"
+
+          # Tier selection based on trigger type.
+          - script: |
+              if [ "$(Build.Reason)" = "PullRequest" ]; then
+                echo "##vso[task.setvariable variable=TEST_FILTER]TestCategory=Critical"
+              elif [ "$(Build.Reason)" = "Schedule" ]; then
+                echo "##vso[task.setvariable variable=TEST_FILTER]TestCategory=Critical|TestCategory=High|TestCategory=Medium|TestCategory=Low"
+              else
+                echo "##vso[task.setvariable variable=TEST_FILTER]TestCategory=Critical|TestCategory=High"
+              fi
+            displayName: "Resolve risk-based test filter"
+
+          - script: |
+              dotnet test --configuration Release --no-build \
+                --filter "$(TEST_FILTER)" \
+                --logger "trx;LogFileName=results.trx" \
+                --results-directory "$(Agent.TempDirectory)/TestResults"
+            displayName: "Run tests ($(TEST_FILTER))"
+            env:
+              TEST_BASE_URL: $(TEST_BASE_URL)
+
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: "VSTest"
+              testResultsFiles: "$(Agent.TempDirectory)/TestResults/*.trx"
+              failTaskOnFailedTests: true
+
+          - task: PublishBuildArtifacts@1
+            condition: failed()
+            inputs:
+              PathtoPublish: "artifacts"
+              ArtifactName: "failure-screenshots"
+
+  # Release gate: promotion to production is blocked unless the Critical
+  # tier passed on this pipeline run.
+  - stage: ReleaseGate
+    dependsOn: RiskBasedRegression
+    condition: succeeded()
+    jobs:
+      - job: ApproveRelease
+        displayName: "Critical-path validated - release unblocked"
+        steps:
+          - script: echo "Critical business flows passed. Release may proceed."

@@ -1,0 +1,53 @@
+{
+  "businessFlows": [
+    {
+      "flowId": "PAYMENT_PROCESSING",
+      "description": "Initiate and confirm a payment (card or bank rail)",
+      "businessImpact": 5,
+      "changeFrequency": 4,
+      "historicalDefectDensity": 5,
+      "riskCategory": "Critical"
+    },
+    {
+      "flowId": "FUND_TRANSFER",
+      "description": "Transfer funds between own accounts or to a third party",
+      "businessImpact": 5,
+      "changeFrequency": 3,
+      "historicalDefectDensity": 4,
+      "riskCategory": "Critical"
+    },
+    {
+      "flowId": "AUTHENTICATION",
+      "description": "Login, MFA, session management",
+      "businessImpact": 5,
+      "changeFrequency": 2,
+      "historicalDefectDensity": 3,
+      "riskCategory": "Critical"
+    },
+    {
+      "flowId": "ACCOUNT_STATEMENTS",
+      "description": "View and export account statements",
+      "businessImpact": 3,
+      "changeFrequency": 2,
+      "historicalDefectDensity": 2,
+      "riskCategory": "High"
+    },
+    {
+      "flowId": "PROFILE_MANAGEMENT",
+      "description": "Update contact details, notification preferences",
+      "businessImpact": 2,
+      "changeFrequency": 1,
+      "historicalDefectDensity": 1,
+      "riskCategory": "Medium"
+    },
+    {
+      "flowId": "HELP_CENTER",
+      "description": "Static help/FAQ content",
+      "businessImpact": 1,
+      "changeFrequency": 1,
+      "historicalDefectDensity": 1,
+      "riskCategory": "Low"
+    }
+  ],
+  "notes": "riskCategory is the review-approved output, not auto-derived, though the raw scores can inform it (e.g. businessImpact + historicalDefectDensity >= 8 => Critical). Reviewed jointly by QE and Product each release cycle."
+}
